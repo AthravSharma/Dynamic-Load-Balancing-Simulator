@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dynamic Load Balancing Simulator</title>
+
+    <!-- Optional: modern Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg1: #0f172a;
+            --bg2: #1e293b;
+
+            --card-bg: #1e293b;
+            --card-border: #334155;
+
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Poppins", system-ui;
+            background: linear-gradient(135deg, var(--bg1), var(--bg2));
+            color: var(--text);
+        }
+
+        .wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 30px;
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.45);
+        }
+
+        h1 {
+            text-align: center;
+            margin: 0 0 6px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 22px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 22px;
+            border-radius: 14px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 12px;
+            display: block;
+            color: var(--text);
+        }
+
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 5px;
+            transition: 0.2s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35);
+        }
+
+        button {
+            padding: 10px 16px;
+            margin-top: 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .processor-box {
+            background: rgba(255, 255, 255, 0.04);
+            border-left: 6px solid var(--primary);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 14px;
+            transition: 0.25s ease;
+        }
+
+        .processor-box:hover {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+        }
+
+        .processor-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .load-bar-outer {
+            width: 100%;
+            height: 12px;
+            margin-top: 8px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .load-bar-inner {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            width: 0%;
+            transition: 0.6s ease;
+        }
+
+        .task-pill {
+            display: inline-block;
+            padding: 6px 12px;
+            background: var(--primary);
+            color: white;
+            border-radius: 999px;
+            font-size: 11px;
+            margin: 4px 4px 0 0;
+            transition: 0.2s ease;
+        }
+
+        .task-pill:hover {
+            background: var(--primary-hover);
+            transform: scale(1.05);
+        }
+
+        #stats {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        @media (max-width: 800px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="header">
+                <h1>Dynamic Load Balancing Simulator</h1>
+                <p class="subtitle">
+                    Visualize how tasks are greedily assigned to processors based on their current load.
+                </p>
+                <div class="badge-row">
+                    <div class="badge">
+                        <span class="badge-dot"></span>
+                        Greedy Scheduling
+                    </div>
+                    <div class="badge">
+                        <span class="badge-dot"></span>
+                        Real-time Visualization
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid">
+
+                <!-- LEFT CARD: Inputs -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">
+                                <span class="icon">⚙️</span>
+                                Simulation Inputs
+                            </div>
+                            <div class="card-caption">Configure processors and task burst times.</div>
+                        </div>
+                        <button class="btn-ghost" type="button" onclick="resetAll()">Reset</button>
+                    </div>
+
+                    <label>Number of Processors</label>
+                    <input type="number" id="processors" min="1" placeholder="e.g. 3">
+
+                    <label>Number of Tasks</label>
+                    <input type="number" id="tasks" min="1" placeholder="e.g. 6">
+
+                    <div class="button-row">
+                        <button class="btn-primary" type="button" onclick="generateInputs()">
+                            ✏️ Generate Task Inputs
+                        </button>
+                        <button class="btn-secondary" type="button" onclick="autoFillTasks()">
+                            🎲 Auto-fill Random
+                        </button>
+                    </div>
+
+                    <div id="taskInputs"></div>
+
+                    <div class="run-row">
+                        <button class="btn-primary" type="button" onclick="simulate()">
+                            ▶ Run Load Balancing
+                        </button>
+                    </div>
+                </div>
+
+                <!-- RIGHT CARD: Output -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">
+                                <span class="icon">📊</span>
+                                Distribution Across Processors
+                            </div>
+                            <div class="card-caption">Each bar shows total load assigned to that processor.</div>
+                        </div>
+                    </div>
+
+                    <div id="output">
+                        <div class="empty-state">
+                            <span>🧮</span>
+                            Set processors, tasks, and click <b>Run Load Balancing</b> to see the distribution.
+                        </div>
+                    </div>
+                    <div id="stats"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generateInputs() {
+            const T = parseInt(document.getElementById("tasks").value);
+            const box = document.getElementById("taskInputs");
+            box.innerHTML = "";
+
+            if (!T || T <= 0) return;
+
+            const label = document.createElement("p");
+            label.textContent = "Burst times for each task (BT):";
+            box.appendChild(label);
+
+            for (let i = 1; i <= T; i++) {
+                const row = document.createElement("div");
+                row.style.marginBottom = "6px";
+                row.innerHTML = `<input type='number' id='task${i}' placeholder='Task T${i} burst time'>`;
+                box.appendChild(row);
+            }
+        }
+
+        function autoFillTasks() {
+            const T = parseInt(document.getElementById("tasks").value);
+            if (!T || T <= 0) return;
+
+            if (!document.getElementById("task1")) generateInputs();
+
+            for (let i = 1; i <= T; i++) {
+                document.getElementById("task" + i).value = Math.floor(Math.random() * 10) + 1;
+            }
+        }
+
+        function resetAll() {
+            document.getElementById("processors").value = "";
+            document.getElementById("tasks").value = "";
+            document.getElementById("taskInputs").innerHTML = "";
+            document.getElementById("output").innerHTML = `
+            <div class="empty-state">
+                <span>🧮</span>
+                Set processors, tasks, and click <b>Run Load Balancing</b> to see the distribution.
+            </div>`;
+            document.getElementById("stats").innerHTML = "";
+        }
+
+        function simulate() {
+            const P = parseInt(document.getElementById("processors").value);
+            const T = parseInt(document.getElementById("tasks").value);
+
+            const output = document.getElementById("output");
+            const stats = document.getElementById("stats");
+
+            output.innerHTML = "";
+            stats.innerHTML = "";
+
+            if (!P || !T || P <= 0 || T <= 0) {
+                output.innerHTML = `<div class="empty-state">
+                <span>⚠️</span>
+                Please enter valid values for <b>processors</b> and <b>tasks</b>.
+            </div>`;
+                return;
+            }
+
+            const tasks = [];
+            for (let i = 1; i <= T; i++) {
+                const val = document.getElementById("task" + i)?.value;
+                if (!val) {
+                    output.innerHTML = `<div class="empty-state">
+                    <span>⚠️</span>
+                    Please fill all burst times or use <b>Auto-fill Random</b>.
+                </div>`;
+                    return;
+                }
+                tasks.push({ id: i, bt: parseInt(val) });
+            }
+
+            const load = Array(P).fill(0);
+            const assigned = Array.from({ length: P }, () => []);
+
+            // Greedy: assign each task to processor with minimum current load
+            tasks.forEach(task => {
+                let minIndex = 0;
+                for (let j = 1; j < P; j++) {
+                    if (load[j] < load[minIndex]) minIndex = j;
+                }
+                assigned[minIndex].push(task);
+                load[minIndex] += task.bt;
+            });
+
+            const maxLoad = Math.max(...load);
+            const minLoad = Math.min(...load);
+
+            for (let p = 0; p < P; p++) {
+                const box = document.createElement("div");
+                box.className = "processor-box";
+
+                // slightly tint based on how loaded the processor is
+                const utilization = maxLoad ? load[p] / maxLoad : 0;
+                if (utilization > 0.85) {
+                    box.style.borderLeftColor = "#f97316"; // high load
+                } else if (utilization < 0.4) {
+                    box.style.borderLeftColor = "#22c55e"; // light load
+                }
+
+                box.innerHTML = `
+                <div class='processor-header'>
+                    <span><b>Processor P${p + 1}</b></span>
+                    <span class="load-label">Total load: <b>${load[p]}</b></span>
+                </div>
+                <div class='load-bar-outer'>
+                    <div class='load-bar-inner' style='width:${maxLoad ? (load[p] / maxLoad) * 100 : 0}%'></div>
+                </div>
+            `;
+
+                const taskRow = document.createElement("div");
+                taskRow.className = "task-row";
+
+                if (assigned[p].length === 0) {
+                    const empty = document.createElement("span");
+                    empty.style.fontSize = "11px";
+                    empty.style.color = "#9ca3af";
+                    empty.textContent = "No tasks assigned";
+                    taskRow.appendChild(empty);
+                } else {
+                    assigned[p].forEach(t => {
+                        const pill = document.createElement("span");
+                        pill.className = "task-pill";
+                        pill.innerHTML = `<span class="dot"></span> T${t.id} (${t.bt})`;
+                        taskRow.appendChild(pill);
+                    });
+                }
+
+                box.appendChild(taskRow);
+                output.appendChild(box);
+            }
+
+            const imbalance = maxLoad - minLoad;
+            const fairlyBalanced = imbalance <= Math.ceil(maxLoad * 0.25);
+
+            const maxStatClass = fairlyBalanced ? "stat-pill stat-pill--ok" : "stat-pill";
+            const imbalanceClass = fairlyBalanced ? "stat-pill stat-pill--ok" : "stat-pill stat-pill--warn";
+
+            stats.innerHTML = `
+            <div class="${maxStatClass}">
+                <strong>Max Load:</strong> ${maxLoad}
+            </div>
+            <div class="stat-pill">
+                <strong>Min Load:</strong> ${minLoad}
+            </div>
+            <div class="${imbalanceClass}">
+                <strong>Imbalance:</strong> ${imbalance}
+            </div>
+            <div class="stat-pill">
+                <strong>Processors:</strong> ${P} &nbsp;|&nbsp; <strong>Tasks:</strong> ${T}
+            </div>
+        `;
+        }
+    </script>
+
+</body>
+
+</html>
